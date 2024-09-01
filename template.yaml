@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  bedrock-slack-bot-ts
+
+Parameters:
+  SlackBotToken:
+    Description: Slack Bot Token
+    Type: String
+  SlackSigningSecret:
+    Description: Slack Signing Secret
+    Type: String
+Globals:
+  Function:
+    Timeout: 60
+
+Resources:
+  BedrockSlackBotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: bedrock-slack-bot/
+      Handler: app.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          SLACK_BOT_TOKEN: !Ref SlackBotToken
+          SLACK_SIGNING_SECRET: !Ref SlackSigningSecret
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /slack/events
+            Method: post
+      Policies: 
+        - AmazonBedrockFullAccess
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+        - app.ts
+        External:
+          - '@aws-sdk/*'
+
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/slack/events"
+  BedrockSlackBotFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt BedrockSlackBotFunction.Arn
